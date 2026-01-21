@@ -2,7 +2,6 @@
 /target/
 /deterministic/target/
 /deterministic/Cargo.lock
-Cargo.lock
 **/*.rs.bk
 *.pdb
 
@@ -63,3 +62,6 @@ scripts/docker-compose.generated.yml
 *.tfvars
 !*.auto.tfvars
 .terraform.lock.hcl
+
+# Nix
+/result
