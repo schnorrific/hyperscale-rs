@@ -58,11 +58,19 @@
         envVars = {
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           PROTOC = "${pkgs.protobuf}/bin/protoc";
-          BINDGEN_EXTRA_CLANG_ARGS = pkgs.lib.optionalString pkgs.stdenv.isLinux (pkgs.lib.concatStringsSep " " [
-            "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major (pkgs.lib.getVersion pkgs.clang)}/include"
-            "-isystem ${pkgs.glibc.dev}/include"
-            "-isystem /usr/include"
-          ]);
+          BINDGEN_EXTRA_CLANG_ARGS =
+            if pkgs.stdenv.isLinux then
+              pkgs.lib.concatStringsSep " " [
+                "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major (pkgs.lib.getVersion pkgs.clang)}/include"
+                "-isystem ${pkgs.glibc.dev}/include"
+                "-isystem /usr/include"
+              ]
+            else if pkgs.stdenv.isDarwin then
+              pkgs.lib.concatStringsSep " " [
+                "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major (pkgs.lib.getVersion pkgs.clang)}/include"
+                "-isystem ${pkgs.darwin.Libsystem}/include"
+              ]
+            else "";
         };
 
         rustPlatform = pkgs.makeRustPlatform {
@@ -88,7 +96,15 @@
           PROTOC = envVars.PROTOC;
           BINDGEN_EXTRA_CLANG_ARGS = envVars.BINDGEN_EXTRA_CLANG_ARGS;
 
-          doCheck = false; # Skip tests by default for faster builds
+          # Enable tests and enforce offline/locked builds
+          doCheck = true;
+
+          # Ensure Cargo uses --locked (--offline is already added by buildRustPackage)
+          cargoBuildFlags = [ "--locked" ];
+          cargoTestFlags = [ "--locked" ];
+
+          # Prevent any network access during build
+          __darwinAllowLocalNetworking = false;
 
           meta = with pkgs.lib; {
             description = "Rust implementation of Hyperscale consensus protocol";
@@ -122,26 +138,30 @@
               name = "CARGO_HOME";
               eval = "$PRJ_ROOT/.nix-cargo/${system}";
             }
+            {
+              name = "CARGO_NET_OFFLINE";
+              value = "true";
+            }
           ];
 
           commands = [
             {
               name = "tests";
               category = "testing";
-              help = "Run tests";
-              command = "cargo test";
+              help = "Run tests (offline, locked)";
+              command = "cargo test --locked --offline";
             }
             {
               name = "tests-workspace";
               category = "testing";
-              help = "Run tests in workspace";
-              command = "cargo test --workspace";
+              help = "Run tests in workspace (offline, locked)";
+              command = "cargo test --workspace --locked --offline";
             }
             {
               name = "tests-all";
               category = "testing";
-              help = "Run tests with all targets and all features";
-              command = "cargo test --all-targets --all-features";
+              help = "Run tests with all targets and all features (offline, locked)";
+              command = "cargo test --all-targets --all-features --locked --offline";
             }
           ];
         };

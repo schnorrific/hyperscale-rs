@@ -129,6 +129,57 @@ cargo run --release --bin hyperscale-sim
 cargo test
 ```
 
+### Nix Development Environment (Offline Tests)
+
+This project provides a Nix flake for reproducible, offline development:
+
+#### Setup
+```bash
+# Enter the development shell
+nix develop
+```
+
+#### Running Tests (Offline & Locked)
+The Nix development environment enforces offline, locked builds to ensure reproducibility:
+
+```bash
+# Run tests (uses --locked --offline)
+tests
+
+# Run workspace tests
+tests-workspace
+
+# Run all tests with all features
+tests-all
+```
+
+All test commands automatically use `--locked --offline` flags, preventing network access and ensuring tests use only `Cargo.lock`.
+
+#### Building with Nix
+```bash
+# Build the project (includes running tests)
+nix build
+
+# Build without tests (faster)
+nix build --no-check
+```
+
+The Nix build process:
+- Runs all tests by default (`doCheck = true`)
+- Enforces `--locked --offline` for all Cargo operations
+- Uses fixed dependency versions from `Cargo.lock`
+- Makes no network requests during build/test phases
+
+#### Verifying Offline Purity
+To verify the build is truly offline, you can:
+```bash
+# On macOS/Linux with network namespace support
+unshare --net nix build
+
+# Or check Nix sandbox (requires enabling Nix sandbox)
+nix build --option sandbox true
+```
+
 ## Running a Local Cluster
 
 For development and testing, you can launch a local cluster using the provided scripts.
