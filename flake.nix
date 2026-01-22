@@ -30,6 +30,9 @@
           cp -r ${radixdlt-scrypto}/* $out/vendor/radixdlt-scrypto/
         '';
 
+        # Use clang instead of gcc for building on Linux to avoid header mismatches
+        stdenv = pkgs.stdenv;
+
         nativeBuildInputs = [
           rust
           pkgs.pkg-config
@@ -37,7 +40,7 @@
           pkgs.cmake
           pkgs.llvmPackages.libclang
         ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
-          pkgs.llvmPackages.bintools
+          # We omit llvmPackages.bintools here to avoid conflicts with stdenv.cc in the devShell
         ];
 
         buildInputs = [
@@ -51,9 +54,15 @@
         ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
           pkgs.stdenv.cc.cc.lib
         ];
+
         envVars = {
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           PROTOC = "${pkgs.protobuf}/bin/protoc";
+          BINDGEN_EXTRA_CLANG_ARGS = pkgs.lib.optionalString pkgs.stdenv.isLinux (pkgs.lib.concatStringsSep " " [
+            "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major (pkgs.lib.getVersion pkgs.clang)}/include"
+            "-isystem ${pkgs.glibc.dev}/include"
+            "-isystem /usr/include"
+          ]);
         };
 
         rustPlatform = pkgs.makeRustPlatform {
@@ -77,6 +86,7 @@
 
           LIBCLANG_PATH = envVars.LIBCLANG_PATH;
           PROTOC = envVars.PROTOC;
+          BINDGEN_EXTRA_CLANG_ARGS = envVars.BINDGEN_EXTRA_CLANG_ARGS;
 
           doCheck = false; # Skip tests by default for faster builds
 
@@ -91,6 +101,8 @@
           name = "hyperscale-rs-dev-shell";
           packages = nativeBuildInputs ++ buildInputs ++ [
             pkgs.llvmPackages.libcxx
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+            pkgs.gcc
           ];
 
           env = [
@@ -101,6 +113,10 @@
             {
               name = "PROTOC";
               value = envVars.PROTOC;
+            }
+            {
+              name = "BINDGEN_EXTRA_CLANG_ARGS";
+              value = envVars.BINDGEN_EXTRA_CLANG_ARGS;
             }
             {
               name = "CARGO_HOME";
