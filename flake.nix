@@ -2,7 +2,7 @@
   description = "A Nix Flake for hyperscale-rs development environment";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
     devshell.url = "github:numtide/devshell";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
@@ -36,12 +36,20 @@
           pkgs.protobuf
           pkgs.cmake
           pkgs.llvmPackages.libclang
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
           pkgs.llvmPackages.bintools
         ];
 
         buildInputs = [
           pkgs.openssl
           pkgs.libiconv
+          pkgs.zlib
+          pkgs.bzip2
+          pkgs.lz4
+          pkgs.zstd
+          pkgs.snappy
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+          pkgs.stdenv.cc.cc.lib
         ];
         envVars = {
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
@@ -93,6 +101,10 @@
             {
               name = "PROTOC";
               value = envVars.PROTOC;
+            }
+            {
+              name = "CARGO_HOME";
+              eval = "$PRJ_ROOT/.nix-cargo/${system}";
             }
           ];
 

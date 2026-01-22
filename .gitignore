@@ -31,7 +31,6 @@ profile.json.gz
 
 # RocksDB
 *.sst
-*.log
 MANIFEST-*
 CURRENT
 IDENTITY
@@ -65,3 +64,4 @@ scripts/docker-compose.generated.yml
 
 # Nix
 /result
+/.nix-cargo
