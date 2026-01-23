@@ -136,7 +136,7 @@
             }
             {
               name = "CARGO_HOME";
-              eval = "$PRJ_ROOT/.nix-cargo/${system}";
+              eval = "$PRJ_ROOT/.cargo-nix/${system}";
             }
             {
               name = "CARGO_NET_OFFLINE";

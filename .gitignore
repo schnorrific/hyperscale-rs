@@ -64,4 +64,4 @@ scripts/docker-compose.generated.yml
 
 # Nix
 /result
-/.nix-cargo
+/.cargo-nix
