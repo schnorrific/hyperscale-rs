@@ -160,20 +160,20 @@
             {
               name = "tests";
               category = "testing";
-              help = "Run tests (offline, locked)";
-              command = "cargo test --locked --offline";
+              help = "Run tests";
+              command = "cargo test --no-fail-fast";
             }
             {
               name = "tests-workspace";
               category = "testing";
-              help = "Run tests in workspace (offline, locked)";
-              command = "cargo test --workspace --locked --offline";
+              help = "Run tests in workspace";
+              command = "cargo test --no-fail-fast --workspace";
             }
             {
               name = "tests-all";
               category = "testing";
-              help = "Run tests with all targets and all features (offline, locked)";
-              command = "cargo test --all-targets --all-features --locked --offline";
+              help = "Run tests with all targets and all features";
+              command = "cargo test --no-fail-fast --all-targets --all-features";
             }
           ];
         };
