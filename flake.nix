@@ -20,7 +20,11 @@
         pkgs = import nixpkgs {
           inherit system overlays;
         };
-        rust = pkgs.rust-bin.stable.latest.default;
+
+        # Define your project's Rust version here - change as needed
+        rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          extensions = [ "rust-src" "rust-analyzer" ];
+        };
 
         # Create a source that includes the submodule content
         src = pkgs.runCommand "source" { } ''
@@ -34,7 +38,7 @@
         stdenv = pkgs.stdenv;
 
         nativeBuildInputs = [
-          rust
+          rustToolchain
           pkgs.pkg-config
           pkgs.protobuf
           pkgs.cmake
@@ -74,8 +78,8 @@
         };
 
         rustPlatform = pkgs.makeRustPlatform {
-          cargo = rust;
-          rustc = rust;
+          cargo = rustToolchain;
+          rustc = rustToolchain;
         };
       in
       {
@@ -138,11 +142,19 @@
               name = "CARGO_HOME";
               eval = "$PRJ_ROOT/.cargo-nix/${system}";
             }
-            {
-              name = "CARGO_NET_OFFLINE";
-              value = "true";
-            }
           ];
+
+          devshell.startup.rust-toolchain-symlink = {
+            text = ''
+              # Create stable symlink to Rust toolchain for IDE
+              rm -f .rust-toolchain
+              ln -sf ${rustToolchain} .rust-toolchain
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+              echo "✓ Rust toolchain: $(${rustToolchain}/bin/rustc --version)"
+              echo "✓ Symlink: .rust-toolchain → ${rustToolchain}"
+              echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            '';
+          };
 
           commands = [
             {
