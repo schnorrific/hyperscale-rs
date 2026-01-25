@@ -64,5 +64,5 @@ scripts/docker-compose.generated.yml
 
 # Nix
 /result
-/.cargo-nix
-/.rust-toolchain
+/.nix/cargo
+/.nix/rust-toolchain

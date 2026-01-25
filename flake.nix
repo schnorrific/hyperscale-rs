@@ -149,18 +149,26 @@
             }
             {
               name = "CARGO_HOME";
-              eval = "$PRJ_ROOT/.cargo-nix/${system}";
+              eval = "$PRJ_ROOT/.nix/cargo/${system}";
             }
           ];
 
+          devshell.startup.create-nix-directory = {
+            text = ''
+              # Create .nix directory for toolchain symlinks and cargo cache
+              mkdir -p .nix
+            '';
+          };
+
           devshell.startup.rust-toolchain-symlink = {
+            deps = [ "create-nix-directory" ];
             text = ''
               # Create stable symlink to Rust toolchain for IDE
-              rm -f .rust-toolchain
-              ln -sf ${rustToolchain} .rust-toolchain
+              rm -f .nix/rust-toolchain
+              ln -sf ${rustToolchain} .nix/rust-toolchain
               echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
               echo "✓ Rust toolchain: $(${rustToolchain}/bin/rustc --version)"
-              echo "✓ Symlink: .rust-toolchain → ${rustToolchain}"
+              echo "✓ Symlink: .nix/rust-toolchain → ${rustToolchain}"
               echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             '';
           };
