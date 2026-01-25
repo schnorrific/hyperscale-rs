@@ -14,7 +14,15 @@
   };
 
   outputs = { self, nixpkgs, devshell, rust-overlay, flake-utils, radixdlt-scrypto }:
-    flake-utils.lib.eachDefaultSystem (system:
+    {
+      # NixOS modules for systemd-nspawn containers
+      nixosModules = {
+        hyperscale-containers = import ./nix/containers.nix;
+        hyperscale-validator = import ./nix/validator-service.nix;
+        hyperscale-monitoring = import ./nix/monitoring.nix;
+        default = import ./nix/containers.nix;
+      };
+    } // flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
@@ -158,6 +166,44 @@
           };
 
           commands = [
+            # Category: cluster
+            {
+              name = "cluster-docker-start";
+              category = "cluster";
+              help = "Start hyperscale Docker Compose cluster";
+              command = "${pkgs.bash}/bin/bash ./scripts/launch-docker-compose.sh";
+            }
+            {
+              name = "cluster-docker-stop";
+              category = "cluster";
+              help = "Stop hyperscale Docker Compose cluster";
+              command = "${pkgs.bash}/bin/bash ./scripts/stop-docker-compose.sh";
+            }
+            {
+              name = "cluster-nix-start";
+              category = "cluster";
+              help = "Start hyperscale Nix systemd-nspawn cluster";
+              command = "${pkgs.bash}/bin/bash ./scripts/launch-systemd-containers.sh";
+            }
+            {
+              name = "cluster-nix-stop";
+              category = "cluster";
+              help = "Stop hyperscale Nix systemd-nspawn cluster";
+              command = "${pkgs.bash}/bin/bash ./scripts/stop-systemd-containers.sh";
+            }
+            {
+              name = "cluster-process-start";
+              category = "cluster";
+              help = "Start hyperscale process cluster";
+              command = "${pkgs.bash}/bin/bash ./scripts/launch-cluster.sh";
+            }
+            {
+              name = "cluster-process-stop";
+              category = "cluster";
+              help = "Stop hyperscale process cluster";
+              command = "${pkgs.bash}/bin/bash ./scripts/stop-cluster.sh";
+            }
+            # Category: testing
             {
               name = "tests";
               category = "testing";
@@ -165,16 +211,16 @@
               command = "cargo test --no-fail-fast";
             }
             {
-              name = "tests-workspace";
-              category = "testing";
-              help = "Run tests in workspace";
-              command = "cargo test --no-fail-fast --workspace";
-            }
-            {
               name = "tests-all";
               category = "testing";
               help = "Run tests with all targets and all features";
               command = "cargo test --no-fail-fast --all-targets --all-features";
+            }
+            {
+              name = "tests-workspace";
+              category = "testing";
+              help = "Run tests in workspace";
+              command = "cargo test --no-fail-fast --workspace";
             }
           ];
         };
