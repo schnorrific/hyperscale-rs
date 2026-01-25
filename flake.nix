@@ -42,6 +42,7 @@
           pkgs.pkg-config
           pkgs.protobuf
           pkgs.cmake
+          pkgs.gnumake
           pkgs.llvmPackages.libclang
         ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
           # We omit llvmPackages.bintools here to avoid conflicts with stdenv.cc in the devShell
