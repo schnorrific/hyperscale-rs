@@ -13,7 +13,7 @@ let
     name = "hyperscale-validator-${toString validatorId}";
     value = {
       autoStart = true;
-      privateNetwork = false;  # Use host network with macvlan
+      privateNetwork = false; # Use host network with macvlan
 
       # Bind mounts for configuration and data
       bindMounts = {
@@ -77,8 +77,10 @@ let
             RestartSec = "5s";
 
             # Resource limits (optional)
-            ${if cfg.memoryLimit != null then "MemoryMax=${cfg.memoryLimit};" else ""}
-            ${if cfg.cpuQuota != null then "CPUQuota=${cfg.cpuQuota}%;" else ""}
+          }
+          // optionalAttrs (cfg.memoryLimit != null) { MemoryMax = cfg.memoryLimit; }
+          // optionalAttrs (cfg.cpuQuota != null) { CPUQuota = "${toString cfg.cpuQuota}%"; }
+          // {
 
             # Security hardening
             NoNewPrivileges = true;
@@ -111,7 +113,8 @@ let
     };
   };
 
-in {
+in
+{
   options.services.hyperscale-containers = {
     enable = mkEnableOption "Hyperscale validator containers";
 
@@ -216,20 +219,22 @@ in {
 
     # Generate validator containers
     containers = listToAttrs (
-      map (i:
-        let
-          shard = i / cfg.validatorsPerShard;
-          ip = "172.99.0.${toString (10 + i)}";
-          p2pPort = cfg.baseP2PPort + i;
-          rpcPort = cfg.baseRPCPort + i;
-          configPath = "${cfg.dataDir}/validator-${toString i}/config.toml";
-          dataPath = "${cfg.dataDir}/validator-${toString i}/data";
-        in
+      map
+        (i:
+          let
+            shard = i / cfg.validatorsPerShard;
+            ip = "172.99.0.${toString (10 + i)}";
+            p2pPort = cfg.baseP2PPort + i;
+            rpcPort = cfg.baseRPCPort + i;
+            configPath = "${cfg.dataDir}/validator-${toString i}/config.toml";
+            dataPath = "${cfg.dataDir}/validator-${toString i}/data";
+          in
           mkValidatorContainer {
             validatorId = i;
             inherit shard ip p2pPort rpcPort configPath dataPath;
           }
-      ) (range 0 (cfg.numShards * cfg.validatorsPerShard - 1))
+        )
+        (range 0 (cfg.numShards * cfg.validatorsPerShard - 1))
     );
 
     # Apply network conditions if configured

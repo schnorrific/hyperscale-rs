@@ -134,10 +134,10 @@ in {
       wants = [ "network-online.target" ];
 
       # Wait for validator 0 to be healthy before starting others
-      ${if cfg.validatorId > 0 then ''
-        after = [ "hyperscale-validator-0.service" ];
-        requires = [ "hyperscale-validator-0.service" ];
-      '' else ""}
+    } // optionalAttrs (cfg.validatorId > 0) {
+      after = [ "network-online.target" "hyperscale-validator-0.service" ];
+      requires = [ "hyperscale-validator-0.service" ];
+    } // {
 
       serviceConfig = {
         Type = "simple";
@@ -156,8 +156,10 @@ in {
         TimeoutStopSec = "30s";
 
         # Resource limits
-        ${optionalString (cfg.memoryLimit != null) "MemoryMax = ${cfg.memoryLimit};"}
-        ${optionalString (cfg.cpuQuota != null) "CPUQuota = ${toString cfg.cpuQuota}%;"}
+      }
+      // optionalAttrs (cfg.memoryLimit != null) { MemoryMax = cfg.memoryLimit; }
+      // optionalAttrs (cfg.cpuQuota != null) { CPUQuota = "${toString cfg.cpuQuota}%"; }
+      // {
 
         # Security hardening
         NoNewPrivileges = true;
