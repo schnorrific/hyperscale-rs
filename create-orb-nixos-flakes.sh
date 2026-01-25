@@ -140,6 +140,16 @@ sudo tee /etc/nixos/flake.nix >/dev/null <<'FLAKE_EOF'
           nix.settings.http-connections = 128;
           nix.settings.max-jobs = "auto";
 
+          # Enable FHS compatibility for non-NixOS binaries (like JetBrains Remote Dev)
+          programs.nix-ld.enable = true;
+
+          # Enable Vim
+          programs.vim.enable = true;
+          programs.vim.defaultEditor = true;
+
+          # Enable Git
+          programs.git.enable = true;
+
           # Disable kernel locking for OrbStack enhanced features compatibility
           security.lockKernelModules = false;
           security.protectKernelImage = false;
