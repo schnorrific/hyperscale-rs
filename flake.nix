@@ -79,10 +79,7 @@
                 "-isystem /usr/include"
               ]
             else if pkgs.stdenv.isDarwin then
-              pkgs.lib.concatStringsSep " " [
-                "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major (pkgs.lib.getVersion pkgs.clang)}/include"
-                "-isystem ${pkgs.darwin.apple_sdk.Libsystem}/include"
-              ]
+              "-isystem ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major (pkgs.lib.getVersion pkgs.clang)}/include"
             else "";
         };
 
