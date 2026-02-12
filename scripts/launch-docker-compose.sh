@@ -80,10 +80,10 @@ fi
 SPAM_BIN="$ROOT_DIR/target/release/hyperscale-spammer"
 KEY_BIN="$ROOT_DIR/target/release/hyperscale-keygen"
 
-# --- 2. Build & Cleanup ---
+# --- 2. build & cleanup ---
 if [ "$CLEAN" = true ]; then
     $DC -f "$COMPOSE_FILE" down -v --remove-orphans 2>/dev/null || true
-    rm -rf "$DATA_DIR"
+    sudo rm -rf "$DATA_DIR"
 fi
 mkdir -p "$DATA_DIR"
 
@@ -95,6 +95,8 @@ if [ "$USE_GHCR" = true ]; then
 fi
 
 if [ "$BUILD" = true ]; then
+    echo "Building release binaries..."
+    cd "$ROOT_DIR" && cargo build --release --bin hyperscale-keygen --bin hyperscale-spammer
     echo "Building local image (native)..."
     cd "$ROOT_DIR" && DOCKER_BUILDKIT=1 docker build -f Dockerfile.local -t "$IMAGE_NAME" .
 fi
@@ -288,7 +290,7 @@ done
 
 # --- 6. Final Launch & Verification ---
 echo "=== 4. Launching Cluster ==="
-chmod -R 777 "$DATA_DIR"
+sudo chmod -R 777 "$DATA_DIR"
 $DC -f "$COMPOSE_FILE" up -d
 
 echo "Waiting for all nodes to be healthy..."

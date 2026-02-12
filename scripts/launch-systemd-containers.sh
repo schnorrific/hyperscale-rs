@@ -20,7 +20,7 @@ MONITORING=false
 SCRIPT_PATH=$(realpath "$0")
 SCRIPTS_DIR=$(dirname "$SCRIPT_PATH")
 ROOT_DIR=$(dirname "$SCRIPTS_DIR")
-DATA_DIR="${DATA_DIR:-$ROOT_DIR/cluster-data}"
+DATA_DIR="${DATA_DIR:-$ROOT_DIR/.nix/cluster-data_systemd}"
 
 # Parse args
 while [[ $# -gt 0 ]]; do
@@ -46,7 +46,13 @@ VALIDATOR_BIN="$ROOT_DIR/target/release/hyperscale-validator"
 # Build
 if [ "$BUILD" = true ]; then
     echo "Building..."
-    cd "$ROOT_DIR" && cargo build --release --bin hyperscale-validator --bin hyperscale-keygen --bin hyperscale-spammer 2>&1 | tail -3
+    cd "$ROOT_DIR" && \
+        cargo build \
+            --release \
+            --bin hyperscale-validator \
+            --bin hyperscale-keygen \
+            --bin hyperscale-spammer \
+            2>&1 | tail -3
 fi
 
 # Cleanup
@@ -58,7 +64,7 @@ if [ "$CLEAN" = true ]; then
     sudo systemctl reset-failed 'hyperscale-*' 2>/dev/null || true
     # Wait for units to fully stop
     sleep 1
-    rm -rf "$DATA_DIR"
+    sudo rm -rf "$DATA_DIR"
 fi
 
 mkdir -p "$DATA_DIR"
@@ -97,7 +103,11 @@ done
 # Configs
 echo "Generating configs..."
 for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
-    BALANCES=$("$SPAM_BIN" genesis --num-shards "$NUM_SHARDS" --accounts-per-shard "$ACCOUNTS_PER_SHARD" --balance "$INITIAL_BALANCE" --shard $((i / VALIDATORS_PER_SHARD)))
+    BALANCES=$("$SPAM_BIN" genesis \
+        --num-shards "$NUM_SHARDS" \
+        --accounts-per-shard "$ACCOUNTS_PER_SHARD" \
+        --balance "$INITIAL_BALANCE" \
+        --shard $((i / VALIDATORS_PER_SHARD)))
 
     cat > "$DATA_DIR/validator-$i/config.toml" <<EOF
 [node]
@@ -112,6 +122,7 @@ listen_addr = "/ip4/0.0.0.0/udp/$((19000 + i))/quic-v1"
 external_addr = "/ip4/127.0.0.1/udp/$((19000 + i))/quic-v1"
 bootstrap_peers = [$BOOTSTRAP_PEERS]
 version_interop_mode = "relaxed"
+upnp_enabled = false
 
 [consensus]
 proposal_interval_ms = 300
@@ -136,7 +147,10 @@ for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
         --property="Restart=on-failure" \
         systemd-nspawn \
             --quiet \
+            --directory=/ \
             --ephemeral \
+            --private-users=no \
+            --bind-ro=/nix:/nix \
             --bind="$DATA_DIR/validator-$i:/data" \
             --bind-ro="$VALIDATOR_BIN:/bin/validator" \
             --setenv=RUST_LOG="warn,hyperscale=$LOG_LEVEL" \
@@ -191,6 +205,7 @@ EOF
             systemd-nspawn \
                 --quiet \
                 --ephemeral \
+                --bind-ro=/nix:/nix \
                 --bind="$PROM_CONFIG:/etc/prometheus/prometheus.yml:ro" \
                 --bind="$DATA_DIR/prometheus-data:/prometheus" \
                 --bind-ro="$(command -v prometheus):/bin/prometheus" \
@@ -230,6 +245,7 @@ EOF
             systemd-nspawn \
                 --quiet \
                 --ephemeral \
+                --bind-ro=/nix:/nix \
                 --bind="$GRAFANA_CONFIG:/etc/grafana/grafana.ini:ro" \
                 --bind="$DATA_DIR/grafana-data:/var/lib/grafana" \
                 --bind-ro="$(command -v grafana-server):/bin/grafana-server" \

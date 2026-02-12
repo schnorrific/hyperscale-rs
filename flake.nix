@@ -126,6 +126,8 @@
         devShells.default = devshell.legacyPackages.${system}.mkShell {
           name = "hyperscale-rs-dev-shell";
           packages = nativeBuildInputs ++ buildInputs ++ [
+            pkgs.bashInteractive
+            pkgs.jq
             pkgs.llvmPackages.libcxx
           ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
             pkgs.gcc
@@ -185,13 +187,13 @@
               command = "${pkgs.bash}/bin/bash ./scripts/stop-docker-compose.sh";
             }
             {
-              name = "cluster-nix-start";
+              name = "cluster-systemd-start";
               category = "cluster";
               help = "Start hyperscale Nix systemd-nspawn cluster";
               command = "${pkgs.bash}/bin/bash ./scripts/launch-systemd-containers.sh";
             }
             {
-              name = "cluster-nix-stop";
+              name = "cluster-systemd-stop";
               category = "cluster";
               help = "Stop hyperscale Nix systemd-nspawn cluster";
               command = "${pkgs.bash}/bin/bash ./scripts/stop-systemd-containers.sh";

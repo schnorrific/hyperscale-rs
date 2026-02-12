@@ -322,7 +322,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             if wait_ready {
                 println!("Waiting for nodes to be ready...");
                 let start = Instant::now();
-                let ready_timeout = Duration::from_secs(60);
+                let ready_timeout = Duration::from_secs(180);
 
                 loop {
                     if start.elapsed() > ready_timeout {
