@@ -2297,6 +2297,7 @@ dependencies = [
  "hyperscale-core",
  "hyperscale-engine",
  "hyperscale-execution",
+ "hyperscale-mempool",
  "hyperscale-messages",
  "hyperscale-node",
  "hyperscale-types",
