@@ -8,3 +8,4 @@ scripts/monitoring/
 docker-cluster-data/
 distributed-cluster-data/
 cluster-data/
+.nix/

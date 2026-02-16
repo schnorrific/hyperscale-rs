@@ -41,7 +41,7 @@ LOG*
 # Validator data
 data/
 keys/
-cluster-data/
+/cluster-data/
 .hyperscale-nonces.json
 bootstrap-data/
 distributed-cluster-data/
@@ -66,3 +66,4 @@ scripts/docker-compose.generated.yml
 /result
 /.nix/cargo
 /.nix/rust-toolchain
+/.nix/cluster-data_systemd
