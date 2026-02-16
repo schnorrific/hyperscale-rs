@@ -131,6 +131,15 @@
             pkgs.llvmPackages.libcxx
           ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
             pkgs.gcc
+            # Profiling and benchmarking tools
+            pkgs.hyperfine
+            pkgs.strace
+            pkgs.linuxPackages.perf
+            pkgs.sysstat
+            pkgs.bc
+            pkgs.time
+            pkgs.lsof
+            pkgs.nftables
           ];
 
           env = [

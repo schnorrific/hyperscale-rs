@@ -69,11 +69,12 @@ fi
 
 mkdir -p "$DATA_DIR"
 
-# Generate keys
+# Generate keys and create minimal container roots
 echo "Generating keys..."
 declare -a PUBLIC_KEYS PEER_IDS
 for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
     mkdir -p "$DATA_DIR/validator-$i/data"
+    mkdir -p "$DATA_DIR/validator-$i/root"
     SEED_HEX=$(printf '%064x' $((12345 + i)))
     echo "$SEED_HEX" | xxd -r -p > "$DATA_DIR/validator-$i/signing.key"
     OUTPUT=$("$KEY_BIN" "$SEED_HEX")
@@ -100,14 +101,22 @@ public_key = \"${PUBLIC_KEYS[$j]}\"
 voting_power = 1"
 done
 
-# Configs
-echo "Generating configs..."
-for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
-    BALANCES=$("$SPAM_BIN" genesis \
+# Generate genesis balances once per shard (OPTIMIZATION 1)
+echo "Generating genesis balances..."
+declare -a SHARD_BALANCES
+for shard in $(seq 0 $((NUM_SHARDS - 1))); do
+    SHARD_BALANCES[$shard]=$("$SPAM_BIN" genesis \
         --num-shards "$NUM_SHARDS" \
         --accounts-per-shard "$ACCOUNTS_PER_SHARD" \
         --balance "$INITIAL_BALANCE" \
-        --shard $((i / VALIDATORS_PER_SHARD)))
+        --shard $shard)
+done
+
+# Configs
+echo "Generating configs..."
+for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
+    SHARD=$((i / VALIDATORS_PER_SHARD))
+    BALANCES="${SHARD_BALANCES[$SHARD]}"
 
     cat > "$DATA_DIR/validator-$i/config.toml" <<EOF
 [node]
@@ -120,9 +129,10 @@ data_dir = "/data/data"
 [network]
 listen_addr = "/ip4/0.0.0.0/udp/$((19000 + i))/quic-v1"
 external_addr = "/ip4/127.0.0.1/udp/$((19000 + i))/quic-v1"
+upnp_enabled = false
 bootstrap_peers = [$BOOTSTRAP_PEERS]
 version_interop_mode = "relaxed"
-upnp_enabled = false
+tcp_fallback_port_range = "$((19000 + i))-$((19000 + i))"
 
 [consensus]
 proposal_interval_ms = 300
@@ -137,31 +147,59 @@ $BALANCES
 EOF
 done
 
-# Start containers using systemd-run
-echo "Starting containers..."
+# Start containers in parallel (OPTIMIZATION 2 & 3)
+# Note: Using minimal container roots with --ephemeral (OPTIMIZATION 3b)
+# This avoids the 4min overhead while maintaining isolation
+echo "Starting containers in parallel..."
+PIDS=()
 for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
-    echo "  Starting validator-$i..."
-
-    sudo systemd-run \
-        --unit="hyperscale-validator-$i" \
-        --property="Restart=on-failure" \
-        systemd-nspawn \
-            --quiet \
-            --directory=/ \
-            --ephemeral \
-            --private-users=no \
-            --bind-ro=/nix:/nix \
-            --bind="$DATA_DIR/validator-$i:/data" \
-            --bind-ro="$VALIDATOR_BIN:/bin/validator" \
-            --setenv=RUST_LOG="warn,hyperscale=$LOG_LEVEL" \
-            /bin/validator --config /data/config.toml
-
-    sleep 0.3
+    (
+        sudo systemd-run \
+            --unit="hyperscale-validator-$i" \
+            --property="Restart=on-failure" \
+            systemd-nspawn \
+                --quiet \
+                --directory="$DATA_DIR/validator-$i/root" \
+                --ephemeral \
+                --private-users=no \
+                --bind-ro=/nix:/nix \
+                --bind="$DATA_DIR/validator-$i:/data" \
+                --bind-ro="$VALIDATOR_BIN:/bin/validator" \
+                --setenv=RUST_LOG="warn,hyperscale=$LOG_LEVEL" \
+                /bin/validator --config /data/config.toml 2>&1 | grep -q 'Running as unit'
+    ) &
+    PIDS+=($!)
 done
 
+# Wait for all systemd-run commands to complete
+echo "  Waiting for systemd-run to complete..."
+for pid in "${PIDS[@]}"; do
+    wait "$pid" || true
+done
+echo "  All $TOTAL_VALIDATORS validators started"
+
 echo ""
+echo "Checking container status..."
+FAILED_COUNT=0
+for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
+    if ! sudo systemctl is-active --quiet "hyperscale-validator-$i"; then
+        echo "  WARNING: validator-$i not active"
+        echo "  Status:"
+        sudo systemctl status "hyperscale-validator-$i" --no-pager -l || true
+        echo "  Logs:"
+        sudo journalctl -u "hyperscale-validator-$i" -n 20 --no-pager || true
+        FAILED_COUNT=$((FAILED_COUNT + 1))
+    fi
+done
+
+if [ $FAILED_COUNT -gt 0 ]; then
+    echo ""
+    echo "ERROR: $FAILED_COUNT validators failed to start"
+    exit 1
+fi
+
 echo "Waiting for startup..."
-sleep 5
+sleep 8
 
 # Build endpoints
 ENDPOINTS=""
@@ -278,7 +316,10 @@ echo "Running smoke test..."
 
 echo ""
 echo "✓ Cluster ready!"
-echo "  Endpoints: $ENDPOINTS"
+echo "  Endpoints:"
+for i in $(seq 0 $((TOTAL_VALIDATORS - 1))); do
+    echo "    http://127.0.0.1:$((BASE_RPC_PORT + i))"
+done
 if [ "$MONITORING" = true ]; then
     echo "  Prometheus: http://localhost:9090"
     echo "  Grafana: http://localhost:3000"
