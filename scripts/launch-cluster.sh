@@ -23,7 +23,10 @@ set -e
 # Default configuration
 NUM_SHARDS=2                                    # Number of shards
 VALIDATORS_PER_SHARD=4                          # Minimum 4 required for BFT (3 validators can't tolerate any delays)
-BASE_PORT=9000                                  # libp2p port
+# Use random port offset to avoid conflicts with lingering UDP sockets from previous runs
+# libp2p QUIC sockets can persist after process termination without SO_REUSEPORT
+PORT_OFFSET=$((RANDOM % 100 * 100))              # Random offset: 0, 100, 200, ..., 9900
+BASE_PORT=$((10000 + PORT_OFFSET))               # libp2p port (10000-19900 range)
 TCP_BASE_PORT=30500                             # Base TCP fallback port
 BASE_RPC_PORT=8080                              # HTTP RPC port
 DATA_DIR="./cluster-data"                       # Data directory
