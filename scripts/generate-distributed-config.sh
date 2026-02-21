@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Generate configuration for a distributed hyperscale cluster.
 #

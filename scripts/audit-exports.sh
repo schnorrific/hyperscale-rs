@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Audit script for finding public exports that aren't used elsewhere in the workspace.
 # Run from the workspace root.

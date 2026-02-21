@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Network tuning script for local multi-validator testing
 # Works on macOS and Linux - sets optimal network parameters for current session
 

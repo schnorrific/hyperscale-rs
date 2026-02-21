@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Launch a single bootstrap node with UPnP enabled.
 #
