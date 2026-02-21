@@ -14,15 +14,19 @@ sudo systemctl stop 'hyperscale-*' 2>/dev/null || true
 # Wait for units to stop
 sleep 2
 
+# Reset failed units to remove them from systemd
+echo "Removing failed units from systemd..."
+sudo systemctl reset-failed 'hyperscale-*' 2>/dev/null || true
+
 # Check status
-RUNNING=$(systemctl list-units --all 'hyperscale-*' --no-legend 2>/dev/null | wc -l)
+RUNNING=$(systemctl list-units --state=active 'hyperscale-*' --no-legend 2>/dev/null | wc -l)
 
 if [ "$RUNNING" -eq 0 ]; then
     echo "✓ All containers stopped"
 else
-    echo "Remaining units:"
-    systemctl list-units --all 'hyperscale-*' --no-legend
+    echo "Still running units:"
+    systemctl list-units --state=active 'hyperscale-*' --no-legend
 fi
 
 echo ""
-echo "To remove data: rm -rf ./cluster-data"
+echo "To remove data: rm -rf ./nix/cluster-data_systemd"
