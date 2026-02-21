@@ -912,6 +912,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "core_affinity"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a034b3a7b624016c6e13f5df875747cc25f884156aad2abd12b6c46797971342"
+dependencies = [
+ "libc 0.2.180",
+ "num_cpus",
+ "winapi",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -972,6 +983,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
 
 [[package]]
+name = "crossbeam"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1137cd7e7fc0fb5d3c5a8678be38ec56e819125d8d7907411fe24ccb943faca8"
+dependencies = [
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -995,6 +1019,15 @@ name = "crossbeam-epoch"
 version = "0.9.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-queue"
+version = "0.3.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f58bbc28f91df819d0aa2a2c00cd19754769c2fad90579b3592b1c9ba7a3115"
 dependencies = [
  "crossbeam-utils",
 ]
@@ -2099,6 +2132,7 @@ version = "0.1.0"
 dependencies = [
  "hyperscale-core",
  "hyperscale-messages",
+ "hyperscale-storage",
  "hyperscale-test-helpers",
  "hyperscale-types",
  "indexmap 2.13.0",
@@ -2119,10 +2153,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyperscale-dispatch"
+version = "0.1.0"
+
+[[package]]
+name = "hyperscale-dispatch-pooled"
+version = "0.1.0"
+dependencies = [
+ "hyperscale-dispatch",
+ "libc 0.2.180",
+ "rayon",
+ "thiserror 2.0.18",
+ "tracing",
+]
+
+[[package]]
+name = "hyperscale-dispatch-sync"
+version = "0.1.0"
+dependencies = [
+ "hyperscale-dispatch",
+]
+
+[[package]]
 name = "hyperscale-engine"
 version = "0.1.0"
 dependencies = [
  "hyperscale-core",
+ "hyperscale-storage",
  "hyperscale-types",
  "indexmap 2.13.0",
  "radix-common",
@@ -2141,8 +2198,10 @@ version = "0.1.0"
 dependencies = [
  "hyperscale-bft",
  "hyperscale-core",
+ "hyperscale-engine",
  "hyperscale-mempool",
  "hyperscale-messages",
+ "hyperscale-storage",
  "hyperscale-test-helpers",
  "hyperscale-types",
  "serde",
@@ -2183,47 +2242,100 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyperscale-node"
+name = "hyperscale-metrics"
+version = "0.1.0"
+
+[[package]]
+name = "hyperscale-metrics-noop"
 version = "0.1.0"
 dependencies = [
- "hyperscale-bft",
- "hyperscale-core",
- "hyperscale-execution",
- "hyperscale-livelock",
- "hyperscale-mempool",
- "hyperscale-messages",
- "hyperscale-provisions",
+ "hyperscale-metrics",
+]
+
+[[package]]
+name = "hyperscale-metrics-prometheus"
+version = "0.1.0"
+dependencies = [
+ "hyperscale-metrics",
+ "prometheus",
+]
+
+[[package]]
+name = "hyperscale-network"
+version = "0.1.0"
+dependencies = [
  "hyperscale-types",
+ "lz4_flex",
+ "sbor",
  "serde",
  "thiserror 2.0.18",
  "tracing",
 ]
 
 [[package]]
-name = "hyperscale-parallel"
+name = "hyperscale-network-libp2p"
 version = "0.1.0"
 dependencies = [
+ "bytes",
+ "clap 4.5.54",
+ "crossbeam",
  "dashmap",
+ "ed25519-dalek",
  "futures",
- "hyperscale-bft",
- "hyperscale-core",
- "hyperscale-engine",
- "hyperscale-mempool",
+ "hex",
+ "hyperscale-dispatch",
+ "hyperscale-dispatch-pooled",
  "hyperscale-messages",
- "hyperscale-node",
- "hyperscale-production",
- "hyperscale-simulation",
+ "hyperscale-metrics",
+ "hyperscale-network",
  "hyperscale-types",
- "radix-common",
- "radix-substate-store-interface",
+ "libp2p",
+ "libp2p-stream",
  "rand 0.8.5",
- "rand_chacha 0.3.1",
  "rayon",
+ "sbor",
+ "serde",
+ "sha2",
  "thiserror 2.0.18",
  "tokio",
- "tokio-util",
  "tracing",
- "tracing-test",
+]
+
+[[package]]
+name = "hyperscale-network-memory"
+version = "0.1.0"
+dependencies = [
+ "hyperscale-network",
+ "hyperscale-types",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "sbor",
+ "tracing",
+]
+
+[[package]]
+name = "hyperscale-node"
+version = "0.1.0"
+dependencies = [
+ "crossbeam",
+ "hyperscale-bft",
+ "hyperscale-core",
+ "hyperscale-dispatch",
+ "hyperscale-engine",
+ "hyperscale-execution",
+ "hyperscale-livelock",
+ "hyperscale-mempool",
+ "hyperscale-messages",
+ "hyperscale-metrics",
+ "hyperscale-network",
+ "hyperscale-provisions",
+ "hyperscale-storage",
+ "hyperscale-types",
+ "quick_cache",
+ "sbor",
+ "serde",
+ "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]
@@ -2236,33 +2348,40 @@ dependencies = [
  "axum",
  "bytes",
  "clap 4.5.54",
+ "core_affinity",
+ "crossbeam",
  "dashmap",
  "ed25519-dalek",
  "futures",
  "hex",
  "hyperscale-bft",
  "hyperscale-core",
+ "hyperscale-dispatch",
+ "hyperscale-dispatch-pooled",
  "hyperscale-engine",
+ "hyperscale-execution",
  "hyperscale-mempool",
  "hyperscale-messages",
+ "hyperscale-metrics",
+ "hyperscale-metrics-prometheus",
+ "hyperscale-network",
+ "hyperscale-network-libp2p",
  "hyperscale-node",
+ "hyperscale-provisions",
+ "hyperscale-storage",
+ "hyperscale-storage-rocksdb",
  "hyperscale-types",
  "igd-next 0.14.3",
- "libc 0.2.180",
  "libp2p",
  "libp2p-stream",
- "lz4_flex",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry-semantic-conventions",
  "opentelemetry_sdk",
  "parking_lot",
- "prometheus",
  "quick_cache",
  "radix-common",
  "rand 0.8.5",
- "rayon",
- "rocksdb",
  "sbor",
  "serde",
  "serde_json",
@@ -2293,19 +2412,26 @@ dependencies = [
 name = "hyperscale-simulation"
 version = "0.1.0"
 dependencies = [
+ "crossbeam",
  "hyperscale-bft",
  "hyperscale-core",
+ "hyperscale-dispatch",
+ "hyperscale-dispatch-sync",
  "hyperscale-engine",
  "hyperscale-execution",
  "hyperscale-mempool",
  "hyperscale-messages",
+ "hyperscale-network",
+ "hyperscale-network-memory",
  "hyperscale-node",
+ "hyperscale-storage",
+ "hyperscale-storage-memory",
  "hyperscale-types",
- "im",
  "radix-common",
  "radix-transactions",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
+ "sbor",
  "thiserror 2.0.18",
  "tracing",
  "tracing-test",
@@ -2320,7 +2446,6 @@ dependencies = [
  "hyperscale-core",
  "hyperscale-engine",
  "hyperscale-mempool",
- "hyperscale-parallel",
  "hyperscale-simulation",
  "hyperscale-spammer",
  "hyperscale-types",
@@ -2329,7 +2454,6 @@ dependencies = [
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "thiserror 2.0.18",
- "tokio",
  "tracing",
  "tracing-subscriber",
  "tracing-test",
@@ -2362,6 +2486,43 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "hyperscale-storage"
+version = "0.1.0"
+dependencies = [
+ "hyperscale-types",
+ "indexmap 2.13.0",
+ "radix-common",
+ "radix-substate-store-impls",
+ "radix-substate-store-interface",
+]
+
+[[package]]
+name = "hyperscale-storage-memory"
+version = "0.1.0"
+dependencies = [
+ "hyperscale-storage",
+ "hyperscale-types",
+ "im",
+ "tracing",
+]
+
+[[package]]
+name = "hyperscale-storage-rocksdb"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hyperscale-bft",
+ "hyperscale-metrics",
+ "hyperscale-storage",
+ "hyperscale-types",
+ "rocksdb",
+ "sbor",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tracing",
 ]
 
 [[package]]
@@ -5861,7 +6022,6 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "pin-project-lite",
- "slab",
  "tokio",
 ]
 
