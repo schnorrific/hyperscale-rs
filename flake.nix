@@ -129,6 +129,7 @@
             pkgs.bashInteractive
             pkgs.jq
             pkgs.llvmPackages.libcxx
+            pkgs.sccache
           ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
             pkgs.gcc
             # Profiling and benchmarking tools
@@ -159,12 +160,20 @@
               name = "CARGO_HOME";
               eval = "$PRJ_ROOT/.nix/cargo/${system}";
             }
+            {
+              name = "RUSTC_WRAPPER";
+              value = "${pkgs.sccache}/bin/sccache";
+            }
+            {
+              name = "SCCACHE_DIR";
+              eval = "$PRJ_ROOT/.nix/sccache";
+            }
           ];
 
           devshell.startup.create-nix-directory = {
             text = ''
-              # Create .nix directory for toolchain symlinks and cargo cache
-              mkdir -p .nix
+              # Create .nix directory for toolchain symlinks, cargo cache, and sccache
+              mkdir -p .nix/sccache
             '';
           };
 
@@ -177,6 +186,7 @@
               echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
               echo "✓ Rust toolchain: $(${rustToolchain}/bin/rustc --version)"
               echo "✓ Symlink: .nix/rust-toolchain → ${rustToolchain}"
+              echo "✓ sccache: enabled (cache dir: .nix/sccache)"
               echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             '';
           };
