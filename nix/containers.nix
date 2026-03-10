@@ -13,7 +13,7 @@ let
     name = "hyperscale-validator-${toString validatorId}";
     value = {
       autoStart = true;
-      privateNetwork = false; # Use host network with macvlan
+      privateNetwork = true; # Enable isolated network
 
       # Bind mounts for configuration and data
       bindMounts = {
